@@ -9,11 +9,15 @@ int add( int i, int j ) { return i+j; }
 
 template<typename ...Targs>
 bool is_syntax_right(Targs&&... args) {
-    return std::get<0>(SyntaxHandler::create_keyword(std::forward<Targs>(args)...)->check_syntax());
+    return SyntaxHandler::create_keyword(std::forward<Targs>(args)...).back()->is_drawable;
 }
 
 BOOST_AUTO_TEST_CASE( my_test )
 {
+    SyntaxHandler::handle_one_line("Title a");
+    SyntaxHandler::handle_one_line("A ->B:aaa");
+    SyntaxHandler::handle_one_line("A .>B: aaa");
+    SyntaxHandler::print_result();
     // seven ways to detect and report the same error:
     BOOST_CHECK( is_syntax_right("Title", "Title aa"));
     BOOST_CHECK( is_syntax_right("Title", "Title aa111 2"));

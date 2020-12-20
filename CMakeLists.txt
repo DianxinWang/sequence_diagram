@@ -10,11 +10,20 @@ if(Boost_FOUND)
     message(STATUS "Boost_VERSION: ${Boost_VERSION}")
     include_directories(${Boost_INCLUDE_DIRS})
 endif()
-include_directories(.)
-add_executable(sequence_diagram_drawer main.cpp)
+
+include_directories(./include)
+set(key_component
+        src/key_components/arrow_line.cpp
+        src/key_components/title.cpp
+        )
+set(view_component
+        include/view_components/rectangle.h
+        include/view_components/straight_line.h
+        )
+add_executable(sequence_diagram_drawer main.cpp ${key_component} ${view_component})
 target_link_libraries(sequence_diagram_drawer ${Boost_LIBRARIES})
 
 
 # Tests
-add_executable(test_syntax test/test_syntax.cpp keyword_factory.h)
+add_executable(test_syntax test/test_syntax.cpp include/keyword_factory.h ${key_component})
 target_link_libraries(test_syntax ${Boost_LIBRARIES})
