@@ -7,28 +7,51 @@
 
 #include <iostream>
 #include <fstream>
-
 #include <boost/geometry.hpp>
-#include <boost/geometry/geometries/point_xy.hpp>
-#include <boost/geometry/geometries/polygon.hpp>
-
 
 namespace geo {
-template<class point_type>
+template<class PointType>
 class StraightLine {
 public:
-    point_type source {};
-    point_type destination {};
+    PointType src {};
+    PointType dest {};
     std::string style{"opacity:0.4;fill:none;stroke:rgb(212,0,0);stroke-width:5"};
 
-    [[nodiscard]] auto get() const {
-        boost::geometry::model::linestring<point_type> c;
-        c.push_back(source);
-        c.push_back(destination);
+    [[nodiscard]] std::string get_style() const {
+        return style;
+    }
+
+    [[nodiscard]] auto get_geometry() const {
+        boost::geometry::model::linestring<PointType> c;
+        c.push_back(src);
+        c.push_back(dest);
         return c;
     }
 
-    StraightLine(const point_type &source, const point_type &destination) : source(source), destination(destination) {}
+
+    template<class GeometryType>
+    StraightLine(const GeometryType &source, const GeometryType &destination) {
+        auto whole_line = StraightLine(source.get_center(), destination.get_center());
+        src = source.intersect_point(whole_line);
+        dest = destination.intersect_point(whole_line);
+    }
+
+    StraightLine(const PointType &source, const PointType &destination): src(source), dest(destination) {}
+
+    template<class Geometry>
+    PointType intersect_point(const Geometry& geometry) const {
+        return {};
+    }
+
+    std::vector<PointType> intersect_point(const StraightLine& line) const {
+        std::vector<PointType> output;
+        boost::geometry::intersection(this->get_geometry(), line.get_geometry(), output);
+        return output;
+    }
+
+    PointType get_center() const {
+        return boost::geometry::return_centroid(get_geometry());
+    }
 };
 }
 #endif //SEQUENCE_DIAGRAM_DRAWER_STRAIGHT_LINE_H

@@ -6,11 +6,10 @@
 #define SEQUENCE_DIAGRAM_DRAWER_BLOCK_H
 
 #include <keyword_factory.h>
-
+#include <iostream>
 class Block: public Keyword {
 public:
     explicit Block(std::string_view total_line) {
-        one_line = total_line;
         block_name = total_line;
     }
     std::string block_name;
@@ -20,8 +19,13 @@ public:
     std::vector<Keyword*> get_keywords_ptr() override {
         return {this};
     }
+
+    void print() override {
+        std::cout << *this;
+    }
+
     friend std::ostream& operator<<(std::ostream& out, const Block& block) {
-        return out << "Block: " << block.block_name;
+        return out << "Block: " << block.block_name << std::endl;
     }
 
 };

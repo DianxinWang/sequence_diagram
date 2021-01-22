@@ -18,17 +18,17 @@
 
 class Keyword: public std::enable_shared_from_this<Keyword> {
 public:;
-    virtual void print(){};
-    virtual std::vector<Keyword*> get_keywords_ptr() {
-        return {this};
-    }
+    virtual void print()=0;
+    virtual std::vector<Keyword*> get_keywords_ptr()=0;
     bool is_drawable = false;
-    std::string one_line;
 };
 
 class InvalidKeyword: public Keyword {
 public:
-    virtual void print(){
+    std::vector<Keyword *> get_keywords_ptr() override {
+        return {this};
+    }
+    void print() override{
         std::cout << "invalid print" << std::endl;
     };
 };
@@ -45,17 +45,17 @@ public:
 
     virtual ~KeywordFactory()=default;
 
-    bool register_constructor(std::string_view type_name, std::function<std::vector<Keyword*>(Targs&&...)> constructor) {
-        if(nullptr == constructor) {
-            return false;
+    void register_constructor(std::function<std::vector<Keyword*>(Targs&&...)> constructor) {
+        if(nullptr != constructor) {
+            _create_funcs.push_back(constructor);
         }
-        return _map_constructor.insert(std::pair{type_name, constructor}).second;
     }
 
-    std::vector<Keyword*> create(std::string_view type_name, Targs&&... args) {
-        for (auto& [regex, func]: _map_constructor) {
-            if(std::regex_match(type_name.data(), std::regex{regex})) {
-                return func(std::forward<Targs>(args)...);
+    std::vector<Keyword*> create(const std::string& type_name, Targs&&... args) {
+        for (auto& func: _create_funcs) {
+            auto keys = func(std::forward<Targs>(args)...);
+            if(!keys.empty()) {
+                return keys;
             }
         }
         return {new InvalidKeyword()};
@@ -63,7 +63,7 @@ public:
 private:
     KeywordFactory()=default;
     static KeywordFactory<Targs...>* _p_keyword_factory;
-    std::map<std::string, std::function<std::vector<Keyword*>(Targs...)>> _map_constructor;
+    std::vector<std::function<std::vector<Keyword*>(Targs...)>> _create_funcs;
 };
 
 template<typename ...Targs>
@@ -74,7 +74,7 @@ class DynamicCreator {
 public:
     struct Register {
         Register() {
-            KeywordFactory<Targs...>::Instance()->register_constructor(T::syntax, _create_object);
+            KeywordFactory<Targs...>::Instance()->register_constructor(_create_object);
         }
         constexpr void do_nothing() const {};
     };
@@ -96,11 +96,11 @@ typename DynamicCreator<T, Targs...>::Register DynamicCreator<T, Targs...>::_reg
 class SyntaxHandler {
 public:
     template<typename ...Targs>
-    static std::vector<Keyword*> create_keyword(std::string_view type_name, Targs&&... args) {
-        return KeywordFactory<std::string_view>::Instance()->create(type_name, std::forward<Targs>(args)...);
+    static std::vector<Keyword*> create_keyword(const std::string& type_name, Targs&&... args) {
+        return KeywordFactory<const std::string&>::Instance()->create(type_name, std::forward<Targs>(args)...);
     }
-    static void handle_one_line(std::string_view one_line) {
-        auto result = create_keyword(one_line.data(), one_line.data());
+    static void handle_one_line(const std::string& one_line) {
+        auto result = create_keyword(one_line, one_line);
         keywords.insert(keywords.end(), result.begin(), result.end());
     }
     // Temporary use
